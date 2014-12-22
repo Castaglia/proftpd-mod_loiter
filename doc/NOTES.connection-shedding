@@ -1,0 +1,122 @@
+Support for OpenSSH sshd's MaxStartups parameter, for having percentage chance
+of denying connection given current number of _unauthenticated_ connections.
+Consider, though:
+
+  client --------------> server
+         -------------->
+               TCP
+             ---------->
+              AUTH TLS handshake, SSH KEX ->
+                   ---->
+              SSH AUTH
+
+Only at the last stage is the connection considered authenticated.  This means
+that plain TCP connections AND connections that have performed key exchange but
+not auth are both liable to be dropped.
+
+This would NOT be part of mod_ban (since we aren't banning any particular
+client/user); it would be something else.  Something to mitigate against
+connection floods.  And it would deal with the TLS handshake case (somewhat,
+as a mitigating factor) as well.
+
+A connection "shedding" module would need to keep track of the count of all
+current sessions in its own database; re-scanning the ScoreboardFile each
+time would slow things down and cause too much contention on the ScoreboardFile.
+
+So perhaps used a small shared memory segment; it only needs hold a single
+uint32_t gauge value: number of current unauthenticated connections.  On
+sess_init(), increment that gauge; on PASS POST_CMD, decrement the gauge.
+On 'core.exit', IF NOT ALREADY AUTHENTICATED, decrement the counter.
+
+On sess_init(), before incrementing, determine odds of rejecting this
+connection by closing it (with suitable response code/message for FTP,
+maybe even SSH).
+
+From sshd_config(5):
+
+MaxStartups
+             Specifies the maximum number of concurrent unauthenticated con-
+             nections to the SSH daemon.  Additional connections will be
+             dropped until authentication succeeds or the LoginGraceTime
+             expires for a connection.  The default is 10.
+
+             Has no effect if sshd is run from inetd(8).
+
+             Alternatively, random early drop can be enabled by specifying the
+             three colon separated values ``start:rate:full'' (e.g.
+             "10:30:60").  sshd(8) will refuse connection attempts with a
+             probability of ``rate/100'' (30%) if there are currently
+             ``start'' (10) unauthenticated connections.  The probability
+             increases linearly and all connection attempts are refused if the
+             number of unauthenticated connections reaches ``full'' (60).
+
+How would this module interact with MaxInstances, MaxClients,
+MaxConnectionsPerHost, MaxClientsPerHost, etc?
+
+The code from OpenSSH ssh.d's drop_connection() function:
+
+* returns 1 if connection should be dropped, 0 otherwise.
+ * dropping starts at connection #max_startups_begin with a probability
+ * of (max_startups_rate/100). the probability increases linearly until
+ * all connections are dropped for startups > max_startups
+ */
+static int
+drop_connection(int startups)
+{
+        int p, r;
+
+        if (startups < options.max_startups_begin)
+                return 0;
+        if (startups >= options.max_startups)
+                return 1;
+        if (options.max_startups_rate == 100)
+                return 1;
+
+        p  = 100 - options.max_startups_rate;
+        p *= startups - options.max_startups_begin;
+        p /= options.max_startups - options.max_startups_begin;
+        p += options.max_startups_rate;
+        r = arc4random_uniform(100);
+
+        debug("drop_connection: p %d, r %d", p, r);
+        return (r < p) ? 1 : 0;
+}
+
+
+Use random(3), srandom(3), et al for getting the random number.  Or do
+use arc4random_uniform(3) (available on Mac OSX, for example), and provide
+fallback implementation (e.g. Linux, Solaris).
+
+Could be useful in mod_proxy, as the first/earlier line of defense in
+front of server.  Although how would mod_proxy know when the connection
+is authenticated?
+
+Support <IfClass>, for whitelisting/blacklisting source groups.
+
+References
+
+  http://en.wikipedia.org/wiki/Tail_drop
+  http://en.wikipedia.org/wiki/Weighted_random_early_detection
+  http://www.faqs.org/rfcs/rfc2309.html
+    Can these "congestion avoidance" approaches be used on hosts/service
+    endpoints, as ways of degrading gracefully in the face of DoS/floods?
+
+FAQ
+
+What is the advantage of random early drop?
+  SSL, SSH DoS attacks
+
+  http://ezunix.net/index.php?title=Protect_SSH_From_Multiple_and_Parallel_Coordinated_Attack
+
+What are the disadvantages of random early drop?
+
+What are the alternatives?
+  Progressively changing the timeouts, especially on a per-source basis
+
+  http://comments.gmane.org/gmane.comp.security.oss.general/6535
+  http://permalink.gmane.org/gmane.comp.security.oss.general/6537
+
+  http://www.freebsdwiki.net/index.php/Block_repeated_illegal_or_failed_SSH_logins
+
+Note: When multi-factor authentication is used, be sure to increase
+TimeoutLogin.

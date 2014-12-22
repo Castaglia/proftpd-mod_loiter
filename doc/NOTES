@@ -1,0 +1,186 @@
+mod_drop?
+mod_eject?
+mod_lurker?
+
+RED: Random Early Drop/Discovery/Detection
+
+  http://en.wikipedia.org/wiki/Random_early_detection
+    http://en.wikipedia.org/wiki/Active_queue_management
+    http://en.wikipedia.org/wiki/Blue_%28queue_management_algorithm%29
+  http://gettys.wordpress.com/2010/12/17/red-in-a-different-light/
+  http://queue.acm.org/detail.cfm?id=2209336
+
+Why useful for proftpd?  See email from Nico Golde:
+
+  Date: Wed, 6 Feb 2013 22:20:35 +0100
+  From: Nico Golde <oss-security+ml@ngolde.de>
+  To: oss-security@lists.openwall.com
+  Message-ID: <20130206212035.GA29981@ngolde.de>
+
+  Hello,
+  years ago CVE-2006-1206 was raised for a denial of service attack against 
+  dropbear based on exhausting the maximum number of connections.
+  Back in 2010 I played around with this in openssh to find out if similar 
+  attacks work against that. Since then I never really knew what to do with 
+  this, but every now and then I remember it and after this bugged me for a 
+  while, I finally brought up the topic to the openssh developers.
+
+  The attached program demonstrates a similar attack against a default openssh 
+  installation. The program simply connects to an ssh server and waits for the 
+  socket to be closed, thus determining the LoginGraceTime setting of the 
+  server. Next, it opens up connections to the server, keeping them open until 
+  no further connection is allowed and thus determining the MaxStartUps setting 
+  (of course, this may not be always accurate depending on the currently active 
+  sessions etc, but this is a minor detail).
+
+  The code continues to sleep for logingracetime seconds and spawns maxstartup 
+  connections again. As a result, unless you are very lucky and you hit the
+  time window between the connection respawn, a user can not login anymore.
+
+  While this is a standard problem for any network service that limits the 
+  number of connections, I think in openssh's case this is supported by very 
+  historically very long LoginGraceTime default settings (2 minutes) and a lack
+  of random early drop usage for MaxStartups.
+
+  While you could argue that this is not per-se an openssh security issue, the 
+  default settings aid here to a trivial denial of service attack against
+  ssh installations by all linux distributions I've seen.
+
+  The result for a user who tries to login is this:
+  ssh_exchange_identification: Connection closed by remote host
+
+  The openssh maintainers actually agree here and it resulted in the following 
+  changes:
+    http://www.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/servconf.c?r1=1.234#rev1.234
+    http://www.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/sshd_config.5?r1=1.156#rev1.156
+    http://www.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/sshd_config?r1=1.89#rev1.89
+
+  I personally don't mind whether this get's a CVE id or not,but considering 
+  that dropbear got one in the past,I thought I'd bring this up.
+
+  Kind regards
+  Nico
+  -- 
+  Nico Golde - http://www.ngolde.de - nion@jabber.ccc.de - GPG: 0xA0A0AAAA
+
+The attached sshext.c exploit code are in this folder.
+
+See also:
+
+  https://bugzilla.redhat.com/show_bug.cgi?id=908707
+
+So, the idea is to have a random early drop module for proftpd, to guard
+against similar attacks.
+
+  RED min:rate:max
+
+Example:
+
+  RED 10:30:100
+
+Dropping starts at 10 connections, with 30% probability, increasing linearly
+to 100%.
+
+See OpenSSH's sshd.c:drop_connection() function, which implements a RED
+algorithm:
+
+  /*
+   * returns 1 if connection should be dropped, 0 otherwise.
+   * dropping starts at connection #max_startups_begin with a probability
+   * of (max_startups_rate/100). the probability increases linearly until
+   * all connections are dropped for startups > max_startups
+   */
+  static int
+  drop_connection(int startups)
+  {
+        int p, r;
+
+        if (startups < options.max_startups_begin)
+                return 0;
+        if (startups >= options.max_startups)
+                return 1;
+        if (options.max_startups_rate == 100)
+                return 1;
+
+        p  = 100 - options.max_startups_rate;
+        p *= startups - options.max_startups_begin;
+        p /= options.max_startups - options.max_startups_begin;
+        p += options.max_startups_rate;
+        r = arc4random_uniform(100);
+
+        debug("drop_connection: p %d, r %d", p, r);
+        return (r < p) ? 1 : 0;
+  }
+
+It would be nice if mod_red would automatically read in the MaxInstances
+value (if configured); that's the current bulwark against such attacks.  Having
+read MaxInstances, mod_red should have builtin min/rate determination, so
+that just having the mod_red module enabled Just Works.  (Need a better name
+than mod_red.)
+
+How does drop_connection() work in OpenSSH?  That is, how do the child
+processes (which know when the user has authenticated) communicate back to
+the parent, so that the parent can have the data for calculating whether/when
+to drop an authentication connection?
+
+  Answer: there's a pipe shared between parent and each child process.  The
+  parent does a select() on the pipe fds.  Look for 'startup_pipes' in sshd.c.
+
+                for (i = 0; i < options.max_startups; i++)
+                        if (startup_pipes[i] != -1 &&
+                            FD_ISSET(startup_pipes[i], fdset)) {
+                                /*
+                                 * the read end of the pipe is ready
+                                 * if the child has closed the pipe
+                                 * after successful authentication
+                                 * or if the child has died
+                                 */
+                                close(startup_pipes[i]);
+                                startup_pipes[i] = -1;
+                                startups--;
+                        }
+
+                        ...
+
+                        if (drop_connection(startups) == 1) {
+                                debug("drop connection #%d", startups);
+                                close(*newsock);
+                                continue;
+                        }
+                        if (pipe(startup_p) == -1) {
+                                close(*newsock);
+                                continue;
+                        }
+
+                        ...
+
+                        for (j = 0; j < options.max_startups; j++)
+                                if (startup_pipes[j] == -1) {
+                                        startup_pipes[j] = startup_p[0];
+                                        if (maxfd < startup_p[0])
+                                                maxfd = startup_p[0];
+                                        startups++;
+                                        break;
+                                }
+                        ...
+
+                        if ((pid = fork()) == 0) {
+                                /*
+                                 * Child.  Close the listening and
+                                 * max_startup sockets.  Start using
+                                 * the accepted socket. Reinitialize
+                                 * logging (since our pid has changed).
+                                 * We break out of the loop to handle
+                                 * the connection.
+                                 */
+                                platform_post_fork_child();
+                                startup_pipe = startup_p[1];
+                                close_startup_pipes();
+
+  Because this implementation relies on being part of the main event loop
+  in main, to do the same in proftpd would mean that it can't be done (at
+  least in the same way) as a module
+
+  HOWEVER, a module COULD use schedules to do the periodic select(2) loop
+  in the daemon process, which would drop the conn as needed (and generate
+  event, for use e.g. by mod_ban).
