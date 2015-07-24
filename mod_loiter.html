@@ -86,6 +86,17 @@ a <code>&lt;Global&gt;</code> context.
 The <code>LoiterTable</code> directive is used to
 
 <p>
+The <code>LoiterTable</code> directive configures a <em>path</em> to a file
+that <code>mod_loiter</code> uses for handling its per-session loitering data.
+The given <em>path</em> must be an absolute path.  <b>Note</b>: this directive
+is <b>required</b> for <code>mod_loiter</code> to function.  It is recommended
+that this file <b>not</b> be on an NFS mounted partition.
+
+<p>
+Note that loiter data <b>is not</b> kept across daemon stop/starts.  That is,
+once <code>proftpd</code> is shutdown, all current loiter data is lost.
+
+<p>
 <hr>
 <h2><a name="Installation">Installation</a></h2>
 To install <code>mod_loiter</code>, go to the third-party module area in
@@ -112,7 +123,7 @@ Then follow the usual steps:
 <p>
 <hr>
 <h2><a name="Usage">Usage</a></h2>
-
+To use <code>mod_loiter</code>, all that is really needed is the following:
 <p>
 Example configuration:
 <pre>
@@ -143,7 +154,7 @@ use only, and should be removed from any production configuration.
 <hr><br>
 
 <font size=2><b><i>
-&copy; Copyright 2014 TJ Saunders<br>
+&copy; Copyright 2014-2015 TJ Saunders<br>
  All Rights Reserved<br>
 </i></b></font>
 
@@ -151,4 +162,3 @@ use only, and should be removed from any production configuration.
 
 </body>
 </html>
-
