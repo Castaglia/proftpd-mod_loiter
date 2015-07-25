@@ -124,11 +124,10 @@ Then follow the usual steps:
 <hr>
 <h2><a name="Usage">Usage</a></h2>
 To use <code>mod_loiter</code>, all that is really needed is the following:
-<p>
-Example configuration:
 <pre>
   &lt;IfModule mod_loiter.c&gt;
     LoiterEngine on
+    LoiterTable /var/data/proftpd/loiter.tab
   &lt;/IfModule&gt;
 </pre>
 
