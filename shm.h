@@ -1,6 +1,6 @@
 /*
  * ProFTPD - mod_loiter shm 
- * Copyright (c) 2014 TJ Saunders
+ * Copyright (c) 2014-2015 TJ Saunders
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ int loiter_shm_destroy(pool *p);
 #define LOITER_FIELD_ID_CONN_COUNT			1
 #define LOITER_FIELD_ID_AUTHD_COUNT			2
 
-int loiter_shm_get_counts(pool *p, unsigned int *conn_count,
+int loiter_shm_get(pool *p, unsigned int *conn_count,
   unsigned int *authd_count);
 int loiter_shm_incr(pool *p, int field_id, int incr);
 

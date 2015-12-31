@@ -1,6 +1,6 @@
 /*
  * ProFTPD - mod_loiter
- * Copyright (c) 2014 TJ Saunders
+ * Copyright (c) 2014-2015 TJ Saunders
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
  * resulting executable, without including the source code for OpenSSL in the
  * source distribution.
  *
- * DO NOT EDIT BELOW THIS LINE
+ * -----DO NOT EDIT BELOW THIS LINE-----
  * $Archive: mod_loiter.a $
  */
 
@@ -34,10 +34,10 @@ module loiter_module;
 
 int loiter_logfd = -1;
 pool *loiter_pool = NULL;
-const char *loiter_channel = "loiter";
 
 static int loiter_engine = FALSE;
 static int loiter_has_authenticated = FALSE;
+static const char *trace_channel = "loiter";
 
 /* Default values for the low/high watermarks and rate. */
 #define LOITER_RULES_DEFAULT_LOW	20
@@ -123,21 +123,21 @@ static int loiter_drop_conn(unsigned int low, unsigned int high,
   unauthd_count = conn_count - authd_count;
 
   if (unauthd_count < low) {
-    pr_trace_msg(loiter_channel, 5,
+    pr_trace_msg(trace_channel, 5,
       "unauthenticated connection count (%u) < low watermark (%u)",
       unauthd_count, low);
     return FALSE;
   }
 
   if (unauthd_count >= high) {
-    pr_trace_msg(loiter_channel, 5,
+    pr_trace_msg(trace_channel, 5,
       "unauthenticated connection count (%u) >= high watermark (%u)",
       unauthd_count, high);
     return TRUE;
   }
 
   if (rate == 100) {
-    pr_trace_msg(loiter_channel, 5, "drop connection rate (%u) == 100");
+    pr_trace_msg(trace_channel, 5, "drop connection rate (%u) == 100", rate);
     return TRUE;
   }
 
@@ -151,7 +151,7 @@ static int loiter_drop_conn(unsigned int low, unsigned int high,
   r = (unsigned int) ((1 + rand()) / (RAND_MAX / 100) + 1);
 #endif /* HAVE_RANDOM */
 
-  pr_trace_msg(loiter_channel, 4,
+  pr_trace_msg(trace_channel, 4,
     "drop connection? probability %u, rate %u", p, r);
   return (r < p) ? TRUE : FALSE;
 }
@@ -209,27 +209,28 @@ MODRET set_loiterlog(cmd_rec *cmd) {
 
 /* usage: LoiterRules [low ...] [high ...] [rate ...] */
 MODRET set_loiterrules(cmd_rec *cmd) {
+  register unsigned int i;
   config_rec *c;
   unsigned int low = LOITER_RULES_DEFAULT_LOW;
   unsigned int high = LOITER_RULES_DEFAULT_HIGH;
   unsigned int rate = LOITER_RULES_DEFAULT_RATE;
 
-  if (c->argc < 3 ||
-      ((c->argc-1 % 2) != 0)) {
+  if (cmd->argc < 3 ||
+      ((cmd->argc-1 % 2) != 0)) {
     CONF_ERROR(cmd, "wrong number of parameters");
   }
 
   CHECK_CONF(cmd, CONF_ROOT|CONF_VIRTUAL|CONF_GLOBAL);
 
-  for (i = 1; i < c->argc; i++) {
-    if (strcasecmp(c->argv[i], "low") == 0) {
+  for (i = 1; i < cmd->argc; i++) {
+    if (strcasecmp(cmd->argv[i], "low") == 0) {
       char *ptr = NULL;
       long v;
 
-      v = strtol(c->argv[i+1], &ptr, 10);
+      v = strtol(cmd->argv[i+1], &ptr, 10);
       if (ptr && *ptr) {
         CONF_ERROR(cmd, pstrcat(cmd->tmp_pool, "invalid low watermark value: ",
-          c->argv[i+1], NULL));
+          cmd->argv[i+1], NULL));
       }
 
       if (v < 1) {
@@ -239,14 +240,14 @@ MODRET set_loiterrules(cmd_rec *cmd) {
       low = (unsigned int) v;
       i++;
 
-    } else if (strcasecmp(c->argv[i], "high") == 0) {
+    } else if (strcasecmp(cmd->argv[i], "high") == 0) {
       char *ptr = NULL;
       long v;
 
-      v = strtol(c->argv[i+1], &ptr, 10);
+      v = strtol(cmd->argv[i+1], &ptr, 10);
       if (ptr && *ptr) {
         CONF_ERROR(cmd, pstrcat(cmd->tmp_pool, "invalid high watermark value: ",
-          c->argv[i+1], NULL));
+          cmd->argv[i+1], NULL));
       }
 
       if (v < 1) {
@@ -256,14 +257,14 @@ MODRET set_loiterrules(cmd_rec *cmd) {
       high = (unsigned int) v;
       i++;
 
-    } else if (strcasecmp(c->argv[i], "rate") == 0) {
+    } else if (strcasecmp(cmd->argv[i], "rate") == 0) {
       char *ptr = NULL;
       long v;
 
-      v = strtol(c->argv[i+1], &ptr, 10);
+      v = strtol(cmd->argv[i+1], &ptr, 10);
       if (ptr && *ptr) {
         CONF_ERROR(cmd, pstrcat(cmd->tmp_pool, "invalid rate value: ",
-          c->argv[i+1], NULL));
+          cmd->argv[i+1], NULL));
       }
 
       if (v < 1 ||
@@ -280,7 +281,7 @@ MODRET set_loiterrules(cmd_rec *cmd) {
     }
   }
 
-  c = add_config(cmd->argv[0], 3, NULL, NULL, NULL);
+  c = add_config_param(cmd->argv[0], 3, NULL, NULL, NULL);
   c->argv[0] = palloc(c->pool, sizeof(unsigned int));
   *((unsigned int *) c->argv[0]) = low;
   c->argv[1] = palloc(c->pool, sizeof(unsigned int));

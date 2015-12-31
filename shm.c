@@ -1,6 +1,6 @@
 /*
  * ProFTPD - mod_loiter shm
- * Copyright (c) 2014 TJ Saunders
+ * Copyright (c) 2014-2015 TJ Saunders
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ static struct loiter_shm_data *loiter_data = NULL;
 static size_t loiter_datasz = 0;
 static int loiter_shmid = -1;
 static pr_fh_t *loiter_datafh = NULL;
+static const char *trace_channel = "loiter.shm";
 
 static const char *get_lock_desc(int lock_type) {
   const char *lock_desc;
@@ -83,7 +84,8 @@ static int lock_shm(int lock_type) {
   fd = PR_FH_FD(loiter_datafh);
   lock_desc = get_lock_desc(lock_type);
 
-  pr_trace_msg(loiter_channel, 9, "attempting to %s shm fd %d", lock_desc, fd);
+  pr_trace_msg(trace_channel, 9,
+    "attempting to %s shm fd %d", lock_desc, fd);
 
   while (fcntl(fd, F_SETLK, &lock) < 0) {
     int xerrno = errno;
@@ -93,14 +95,14 @@ static int lock_shm(int lock_type) {
       continue;
     }
 
-    pr_trace_msg(loiter_channel, 3, "%s of shm fd %d failed: %s",
+    pr_trace_msg(trace_channel, 3, "%s of shm fd %d failed: %s",
       lock_desc, fd, strerror(xerrno));
     if (xerrno == EACCES) {
       struct flock locker;
 
       /* Get the PID of the process blocking this lock. */
       if (fcntl(fd, F_GETLK, &locker) == 0) {
-        pr_trace_msg(loiter_channel, 3, "process ID %lu has blocking %s on "
+        pr_trace_msg(trace_channel, 3, "process ID %lu has blocking %s on "
           "shm fd %d", (unsigned long) locker.l_pid,
           get_lock_desc(locker.l_type), fd);
       }
@@ -126,7 +128,7 @@ static int lock_shm(int lock_type) {
     return -1;
   }
 
-  pr_trace_msg(loiter_channel, 9, "%s of shm fd %d succeeded", lock_desc, fd);
+  pr_trace_msg(trace_channel, 9, "%s of shm fd %d succeeded", lock_desc, fd);
   return 0;
 }
 
@@ -141,7 +143,7 @@ static struct loiter_shm_data *create_shm(pr_fh_t *fh) {
   rem = shm_size % SHMLBA;
   if (rem != 0) {
     shm_size = (shm_size - rem + SHMLBA);
-    pr_trace_msg(loiter_channel, 9,
+    pr_trace_msg(trace_channel, 9,
       "rounded requested size up to %lu bytes", (unsigned long) shm_size);
   }
 
@@ -179,7 +181,7 @@ static struct loiter_shm_data *create_shm(pr_fh_t *fh) {
       PRIVS_RELINQUISH
 
       if (shmid < 0) {
-        pr_trace_msg(loiter_channel, 1,
+        pr_trace_msg(trace_channel, 1,
           "unable to get shm for existing key: %s", strerror(xerrno));
         errno = xerrno;
         return NULL;
@@ -188,12 +190,12 @@ static struct loiter_shm_data *create_shm(pr_fh_t *fh) {
     } else {
       /* Try to provide more helpful/informative log messages. */
       if (xerrno == ENOMEM) {
-        pr_trace_msg(loiter_channel, 1,
+        pr_trace_msg(trace_channel, 1,
           "not enough memory for %lu shm bytes; try specifying a smaller size",
           (unsigned long) shm_size);
 
       } else if (xerrno == ENOSPC) {
-        pr_trace_msg(loiter_channel, 1, "%s",
+        pr_trace_msg(trace_channel, 1, "%s",
           "unable to allocate a new shm ID; system limit of shm IDs reached");
       }
 
@@ -203,7 +205,7 @@ static struct loiter_shm_data *create_shm(pr_fh_t *fh) {
   }
 
   /* Attach to the shm. */
-  pr_trace_msg(loiter_channel, 10, "attempting to attach to shm ID %d", shmid);
+  pr_trace_msg(trace_channel, 10, "attempting to attach to shm ID %d", shmid);
 
   PRIVS_ROOT
   data = (struct loiter_shm_data *) shmat(shmid, NULL, 0);
@@ -211,7 +213,7 @@ static struct loiter_shm_data *create_shm(pr_fh_t *fh) {
   PRIVS_RELINQUISH
 
   if (data == NULL) {
-    pr_trace_msg(loiter_channel, 1,
+    pr_trace_msg(trace_channel, 1,
       "unable to attach to shm ID %d: %s", shmid, strerror(xerrno));
     errno = xerrno;
     return NULL;
@@ -229,7 +231,7 @@ static struct loiter_shm_data *create_shm(pr_fh_t *fh) {
     PRIVS_RELINQUISH
 
     if (res == 0) {
-      pr_trace_msg(loiter_channel, 10,
+      pr_trace_msg(trace_channel, 10,
         "existing shm size: %u bytes", (unsigned int) ds.shm_segsz);
 
       if (ds.shm_segsz != shm_size) {
@@ -253,14 +255,12 @@ static struct loiter_shm_data *create_shm(pr_fh_t *fh) {
           ": remove existing shm using 'ftpdctl loiter shm remove' "
           "before using new size");
 
-        shmcache_close(NULL);
-
         errno = EINVAL;
         return NULL;
       }
 
     } else {
-      pr_trace_msg(loiter_channel, 1,
+      pr_trace_msg(trace_channel, 1,
         "unable to stat shm ID %d: %s", shmid, strerror(xerrno));
       errno = xerrno;
     }
@@ -268,28 +268,29 @@ static struct loiter_shm_data *create_shm(pr_fh_t *fh) {
   } else {
     /* Make sure the memory is initialized. */
     if (lock_shm(F_WRLCK) < 0) {
-      pr_trace_msg(loiter_channel, 1,
+      pr_trace_msg(trace_channel, 1,
         "error write-locking shm: %s", strerror(errno));
     }
 
     memset(data, 0, shm_size);
 
     if (lock_shm(F_UNLCK) < 0) {
-      pr_trace_msg(loiter_channel, 1,
+      pr_trace_msg(trace_channel, 1,
         "error unlocking shm: %s", strerror(errno));
     }
   }
 
   loiter_datasz = shm_size;
   loiter_shmid = shmid;
-  pr_trace_msg(loiter_channel, 9,
+  pr_trace_msg(trace_channel, 9,
     "using shm ID %d for shm path '%s'", loiter_shmid, fh->fh_path);
 
   return data;
 }
 
 int loiter_shm_create(pool *p, const char *path) {
-  int xerrno;
+  int fd, xerrno = 0;
+  struct stat st;
 
   if (p == NULL ||
       path == NULL) {
@@ -303,7 +304,7 @@ int loiter_shm_create(pool *p, const char *path) {
   PRIVS_RELINQUISH
 
   if (loiter_datafh == NULL) {
-    pr_log_debug(DEBUG1, MOD_LOITER_VERSION,
+    pr_log_debug(DEBUG1, MOD_LOITER_VERSION
       ": error: unable to open file '%s': %s", path, strerror(xerrno));
 
     errno = EINVAL;
@@ -343,8 +344,8 @@ int loiter_shm_create(pool *p, const char *path) {
   fd = PR_FH_FD(loiter_datafh);
   (void) pr_fs_get_usable_fd2(&fd);
 
-  pr_trace_msg(loiter_channel, 9,
-    "requested shme file: %s (fd %d)", loiter_datafh->fh_path, fd);
+  pr_trace_msg(trace_channel, 9,
+    "requested shm file: %s (fd %d)", loiter_datafh->fh_path, fd);
 
   loiter_data = create_shm(loiter_datafh);
   if (loiter_data == NULL) {
@@ -400,7 +401,7 @@ int loiter_shm_get(pool *p, unsigned int *conn_count,
   }
 
   if (lock_shm(F_WRLCK) < 0) {
-    pr_trace_msg(loiter_channel, 1,
+    pr_trace_msg(trace_channel, 1,
       "error write-locking shm: %s", strerror(errno));
   }
 
@@ -413,7 +414,7 @@ int loiter_shm_get(pool *p, unsigned int *conn_count,
   }
 
   if (lock_shm(F_UNLCK) < 0) {
-    pr_trace_msg(loiter_channel, 1,
+    pr_trace_msg(trace_channel, 1,
       "error unlocking shm: %s", strerror(errno));
   }
 
@@ -442,7 +443,7 @@ int loiter_shm_incr(pool *p, int field_id, int incr) {
   }
 
   if (lock_shm(F_WRLCK) < 0) {
-    pr_trace_msg(loiter_channel, 1,
+    pr_trace_msg(trace_channel, 1,
       "error write-locking shm: %s", strerror(errno));
   }
 
@@ -465,7 +466,7 @@ int loiter_shm_incr(pool *p, int field_id, int incr) {
   }
 
   if (lock_shm(F_UNLCK) < 0) {
-    pr_trace_msg(loiter_channel, 1,
+    pr_trace_msg(trace_channel, 1,
       "error unlocking shm: %s", strerror(errno));
   }
 
