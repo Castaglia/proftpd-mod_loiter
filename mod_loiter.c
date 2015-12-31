@@ -321,9 +321,7 @@ static void loiter_exit_ev(const void *event_data, void *user_data) {
 
 #if defined(PR_SHARED_MODULE)
 static void loiter_mod_unload_ev(const void *event_data, void *user_data) {
-  if (strncmp((const char *) event_data, "mod_loiter.c", 12) == 0) {
-    register unsigned int i;
-
+  if (strncmp((const char *) event_data, "mod_loiter.c", 13) == 0) {
     /* Unregister ourselves from all events. */
     pr_event_unregister(&loiter_module, NULL, NULL);
 
@@ -493,4 +491,3 @@ module loiter_module = {
   /* Module version */
   MOD_LOITER_VERSION
 };
-
