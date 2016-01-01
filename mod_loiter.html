@@ -7,7 +7,7 @@
 
 <hr>
 <center>
-<h2><b>ProFTPD module <code>mod_loiter</code></b></h2>
+<h3><b>ProFTPD module <code>mod_loiter</code></b></h3>
 </center>
 <hr><br>
 
@@ -28,21 +28,22 @@ The most current version of <code>mod_loiter</code> can be found at:
   <a href="https://github.com/Castaglia/proftpd-mod_loiter">https://github.com/Castaglia/proftpd-mod_loiter</a>
 </pre>
 
-<h2>Author</h2>
+<h3>Author</h3>
 <p>
 Please contact TJ Saunders &lt;tj <i>at</i> castaglia.org&gt; with any
 questions, concerns, or suggestions regarding this module.
 
-<h2>Directives</h2>
+<h3>Directives</h3>
 <ul>
   <li><a href="#LoiterEngine">LoiterEngine</a>
   <li><a href="#LoiterLog">LoiterLog</a>
+  <li><a href="#LoiterMessage">LoiterMessage</a>
   <li><a href="#LoiterRules">LoiterRules</a>
   <li><a href="#LoiterTable">LoiterTable</a>
 </ul>
 
 <hr>
-<h2><a name="LoiterEngine">LoiterEngine</a></h2>
+<h3><a name="LoiterEngine">LoiterEngine</a></h3>
 <strong>Syntax:</strong> LaterEngine <em>on|off</em><br>
 <strong>Default:</strong> <em>off</em><br>
 <strong>Context:</strong> &quot;server config&quot;, <code>&lt;VirtualHost&gt;</code>, <code>&lt;Global&gt;</code><br>
@@ -54,7 +55,7 @@ The <code>LoiterEngine</code> directive enables or disables the module's
 handling of loitering unauthenticated connections.
 
 <hr>
-<h2><a name="LoiterLog">LoiterLog</a></h2>
+<h3><a name="LoiterLog">LoiterLog</a></h3>
 <strong>Syntax:</strong> LoiterLog <em>file</em><br>
 <strong>Default:</strong> None<br>
 <strong>Context:</strong> server config, <code>&lt;VirtualHost&gt;</code>, <code>&lt;Global&gt;</code><br>
@@ -75,8 +76,21 @@ If <em>file</em> is &quot;none&quot;, no logging will be done at all; this
 setting can be used to override a <code>LoiterLog</code> setting inherited from
 a <code>&lt;Global&gt;</code> context.
 
+
 <hr>
-<h2><a name="LoiterRules">LoiterRules</a></h2>
+<h3><a name="LoiterMessage">LoiterMessage</a></h3>
+<strong>Syntax:</strong> LoiterMessage <em>message</em><br>
+<strong>Default:</strong> None<br>
+<strong>Context:</strong> server config, <code>&lt;VirtualHost&gt;</code>, <code>&lt;Global&gt;</code><br>
+<strong>Module:</strong> mod_loiter<br>
+<strong>Compatibility:</strong> 1.3.5rc1 and later
+
+<p>
+The <code>LoiterMessage</code> directive configures a message that will be
+sent to clients that have been dropped for loitering.
+
+<hr>
+<h3><a name="LoiterRules">LoiterRules</a></h3>
 <strong>Syntax:</strong> LoiterRules <em>[low ...] [high ...] [rate ...]</em><br>
 <strong>Default:</strong> LoiterRules low 20 high 100 rate 30<br>
 <strong>Context:</strong> server config, <code>&lt;VirtualHost&gt;</code>, <code>&lt;Global&gt;</code><br>
@@ -94,7 +108,7 @@ dropped when the <em>high</em> threshold (<i>e.g.</i> 100) of unauthenticated
 connections is reached.
 
 <hr>
-<h2><a name="LoiterTable">LoiterTable</a></h2>
+<h3><a name="LoiterTable">LoiterTable</a></h3>
 <strong>Syntax:</strong> LoiterTable <em>path</em><br>
 <strong>Default:</strong> None<br>
 <strong>Context:</strong> &quot;server config&quot;, <code>&lt;VirtualHost&gt;</code>, <code>&lt;Global&gt;</code><br>
@@ -114,7 +128,7 @@ once <code>proftpd</code> is shutdown, all current loiter data is lost.
 
 <p>
 <hr>
-<h2><a name="Installation">Installation</a></h2>
+<h3><a name="Installation">Installation</a></h3>
 To install <code>mod_loiter</code>, go to the third-party module area in
 the proftpd source code and unpack the <code>mod_loiter</code> source tarball:
 <pre>
@@ -138,7 +152,7 @@ Then follow the usual steps:
 
 <p>
 <hr>
-<h2><a name="Usage">Usage</a></h2>
+<h3><a name="Usage">Usage</a></h3>
 To use <code>mod_loiter</code>, all that is really needed is the following:
 <pre>
   &lt;IfModule mod_loiter.c&gt;
