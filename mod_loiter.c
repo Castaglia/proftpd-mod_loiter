@@ -28,10 +28,9 @@
 #include "mod_loiter.h"
 #include "shm.h"
 
-/* Defaults */
+extern pid_t mpid;
 
 module loiter_module;
-
 int loiter_logfd = -1;
 pool *loiter_pool = NULL;
 
@@ -106,7 +105,7 @@ static int loiter_drop_conn(unsigned int low, unsigned int high,
   unsigned int authd_count = 0, conn_count = 0, unauthd_count = 0;
   unsigned int p, r;
 
-  if (loiter_shm_get_counts(loiter_pool, &conn_count, &authd_count) < 0) {
+  if (loiter_shm_get(loiter_pool, &conn_count, &authd_count) < 0) {
     (void) pr_log_writefile(loiter_logfd, MOD_LOITER_VERSION,
       "error getting connection counts: %s", strerror(errno));
     return FALSE;
@@ -207,6 +206,15 @@ MODRET set_loiterlog(cmd_rec *cmd) {
   return PR_HANDLED(cmd);
 }
 
+/* usage: LoiterMessage msg */
+MODRET set_loitermessage(cmd_rec *cmd) {
+  CHECK_ARGS(cmd, 1);
+  CHECK_CONF(cmd, CONF_ROOT|CONF_VIRTUAL|CONF_GLOBAL);
+
+  (void) add_config_param_str(cmd->argv[0], 1, cmd->argv[1]);
+  return PR_HANDLED(cmd);
+}
+
 /* usage: LoiterRules [low ...] [high ...] [rate ...] */
 MODRET set_loiterrules(cmd_rec *cmd) {
   register unsigned int i;
@@ -216,7 +224,7 @@ MODRET set_loiterrules(cmd_rec *cmd) {
   unsigned int rate = LOITER_RULES_DEFAULT_RATE;
 
   if (cmd->argc < 3 ||
-      ((cmd->argc-1 % 2) != 0)) {
+      ((cmd->argc-1) % 2) != 0) {
     CONF_ERROR(cmd, "wrong number of parameters");
   }
 
@@ -371,6 +379,18 @@ static void loiter_startup_ev(const void *event_data, void *user_data) {
   }
 }
 
+static void loiter_shutdown_ev(const void *event_data, void *user_data) {
+  /* Remove the shm from the system.  We can only do this reliably
+   * when the standalone daemon process exits; if it's an inetd process,
+   * there many be other proftpd processes still running.
+   */
+
+  if (getpid() == mpid &&
+      ServerType == SERVER_STANDALONE) {
+    (void) loiter_shm_destroy(loiter_pool);
+  }
+}
+
 /* Initialization routines
  */
 
@@ -384,6 +404,7 @@ static int loiter_init(void) {
 #endif
   pr_event_register(&loiter_module, "core.restart", loiter_restart_ev, NULL);
   pr_event_register(&loiter_module, "core.startup", loiter_startup_ev, NULL);
+  pr_event_register(&loiter_module, "core.shutdown", loiter_shutdown_ev, NULL);
 
   /* Seed the random(3) generator. */ 
 #ifdef HAVE_RANDOM
@@ -437,6 +458,18 @@ static int loiter_sess_init(void) {
   }
 
   if (loiter_drop_conn(rules_low, rules_high, rules_rate) == TRUE) {
+    const char *msg = NULL;
+
+    c = find_config(main_server->conf, CONF_PARAM, "LoiterMessage", FALSE);
+    if (c != NULL) {
+      msg = c->argv[0];
+    }
+
+    if (msg != NULL) {
+      /* XXX Should we support %a, %c variables? */
+      pr_response_send_async(R_530, "%s", msg);
+    }
+
     (void) pr_log_writefile(loiter_logfd, MOD_LOITER_VERSION,
       "dropping connection");
     pr_log_pri(PR_LOG_NOTICE, MOD_LOITER_VERSION ": dropping connection");
@@ -453,6 +486,7 @@ static int loiter_sess_init(void) {
 static conftable loiter_conftab[] = {
   { "LoiterEngine",	set_loiterengine,	NULL },
   { "LoiterLog",	set_loiterlog,		NULL },
+  { "LoiterMessage",	set_loitermessage,	NULL },
   { "LoiterRules",	set_loiterrules,	NULL },
   { "LoiterTable",	set_loitertable,	NULL },
   { NULL }
