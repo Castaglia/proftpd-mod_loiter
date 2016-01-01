@@ -343,6 +343,7 @@ int loiter_shm_create(pool *p, const char *path) {
    */
   fd = PR_FH_FD(loiter_datafh);
   (void) pr_fs_get_usable_fd2(&fd);
+  PR_FH_FD(loiter_datafh) = fd;
 
   pr_trace_msg(trace_channel, 9,
     "requested shm file: %s (fd %d)", loiter_datafh->fh_path, fd);
@@ -369,6 +370,7 @@ int loiter_shm_create(pool *p, const char *path) {
 int loiter_shm_destroy(pool *p) {
   if (loiter_shmid >= 0) {
     int res, xerrno = 0;
+    struct shmid_ds ds;
 
     PRIVS_ROOT
 #if !defined(_POSIX_SOURCE)
@@ -382,12 +384,34 @@ int loiter_shm_destroy(pool *p) {
     if (res < 0) {
       pr_log_debug(DEBUG1, MOD_LOITER_VERSION
         ": error detaching shm ID %d: %s", loiter_shmid, strerror(xerrno));
+
+    } else {
+      (void) pr_log_writefile(loiter_logfd, MOD_LOITER_VERSION,
+        "detached shm ID %d", loiter_shmid);
     }
 
     loiter_data = NULL;
+
+    memset(&ds, 0, sizeof(ds));
+
+    PRIVS_ROOT
+    res = shmctl(loiter_shmid, IPC_RMID, &ds);
+    xerrno = errno;
+    PRIVS_RELINQUISH
+
+    if (res < 0) {
+      pr_log_debug(DEBUG1, MOD_LOITER_VERSION ": error removing shmid %d: %s",
+        loiter_shmid, strerror(xerrno));
+
+    } else {
+      (void) pr_log_writefile(loiter_logfd, MOD_LOITER_VERSION,
+        "removed shmid %d", loiter_shmid);
+    }
+
+    loiter_shmid = -1;
   }
 
-  pr_fsio_close(loiter_datafh);
+  (void) pr_fsio_close(loiter_datafh);
   loiter_datafh = NULL;
   return 0;
 }
