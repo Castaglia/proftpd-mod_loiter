@@ -473,19 +473,11 @@ int loiter_shm_incr(pool *p, int field_id, int incr) {
 
   switch (field_id) {
     case LOITER_FIELD_ID_CONN_COUNT:
-      if (incr > loiter_data->conn_count) {
-        loiter_data->conn_count = 0;
-      } else {
-        loiter_data->conn_count += incr;
-      }
+      loiter_data->conn_count += incr;
       break;
 
     case LOITER_FIELD_ID_AUTHD_COUNT:
-      if (incr > loiter_data->conn_count) {
-        loiter_data->authd_count = 0;
-      } else {
-        loiter_data->authd_count += incr;
-      }
+      loiter_data->authd_count += incr;
       break;
   }
 
