@@ -37,6 +37,7 @@ questions, concerns, or suggestions regarding this module.
 <ul>
   <li><a href="#LoiterEngine">LoiterEngine</a>
   <li><a href="#LoiterLog">LoiterLog</a>
+  <li><a href="#LoiterRules">LoiterRules</a>
   <li><a href="#LoiterTable">LoiterTable</a>
 </ul>
 
@@ -73,6 +74,24 @@ link.
 If <em>file</em> is &quot;none&quot;, no logging will be done at all; this
 setting can be used to override a <code>LoiterLog</code> setting inherited from
 a <code>&lt;Global&gt;</code> context.
+
+<hr>
+<h2><a name="LoiterRules">LoiterRules</a></h2>
+<strong>Syntax:</strong> LoiterRules <em>[low ...] [high ...] [rate ...]</em><br>
+<strong>Default:</strong> LoiterRules low 20 high 100 rate 30<br>
+<strong>Context:</strong> server config, <code>&lt;VirtualHost&gt;</code>, <code>&lt;Global&gt;</code><br>
+<strong>Module:</strong> mod_loiter<br>
+<strong>Compatibility:</strong> 1.3.5rc1 and later
+
+<p>
+The <code>LoiterRules</code> directive tunes the "random early drop" algorithm
+used by <code>mod_loiter</code> for dropping unauthenticated connections.  By
+default, unauthenticated connections will be dropped with a probability of
+<code><em>rate</em>/100</code> (<i>e.g.</i> 30%) if there are currently a
+<em>low</em> (<i>e.g.</i> 20) number of unauthenticated connections.  The
+probability of being dropped rises linearly, and <b>all</b> connections are
+dropped when the <em>high</em> threshold (<i>e.g.</i> 100) of unauthenticated
+connections is reached.
 
 <hr>
 <h2><a name="LoiterTable">LoiterTable</a></h2>
@@ -124,9 +143,11 @@ To use <code>mod_loiter</code>, all that is really needed is the following:
 <pre>
   &lt;IfModule mod_loiter.c&gt;
     LoiterEngine on
-    LoiterTable /var/data/proftpd/loiter.tab
+    LoiterTable /var/data/ftpd/loiter.tab
   &lt;/IfModule&gt;
 </pre>
+<b>Note</b> that <code>mod_loiter</code> has no effect if ProFTPD is run
+via inetd/xinetd/systemd.
 
 <p>
 <b>Logging</b><br>
