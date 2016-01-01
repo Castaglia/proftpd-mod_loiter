@@ -16,3 +16,4 @@ tests/api-tests.log
 *.swp
 .libs
 libtool
+tests.log
