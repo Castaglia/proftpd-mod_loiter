@@ -99,8 +99,10 @@ sent to clients that have been dropped for loitering.
 
 <p>
 The <code>LoiterRules</code> directive tunes the "random early drop" algorithm
-used by <code>mod_loiter</code> for dropping unauthenticated connections.  By
-default, unauthenticated connections will be dropped with a probability of
+used by <code>mod_loiter</code> for dropping unauthenticated connections.
+
+<p>
+By default, unauthenticated connections will be dropped with a probability of
 <code><em>rate</em>/100</code> (<i>e.g.</i> 30%) if there are currently a
 <em>low</em> (<i>e.g.</i> 20) number of unauthenticated connections.  The
 probability of being dropped rises linearly, and <b>all</b> connections are
@@ -118,13 +120,16 @@ connections is reached.
 <p>
 The <code>LoiterTable</code> directive configures a <em>path</em> to a file
 that <code>mod_loiter</code> uses for handling its per-session loitering data.
-The given <em>path</em> must be an absolute path.  <b>Note</b>: this directive
-is <b>required</b> for <code>mod_loiter</code> to function.  It is recommended
-that this file <b>not</b> be on an NFS mounted partition.
+The given <em>path</em> must be an absolute path.
 
 <p>
-Note that loiter data <b>is not</b> kept across daemon stop/starts.  That is,
-once <code>proftpd</code> is shutdown, all current loiter data is lost.
+<b>Note</b>: this directive is <b>required</b> for <code>mod_loiter</code> to
+function.  It is recommended that this file <b>not</b> be on an NFS mounted
+partition.
+
+<p>
+Loiter data <b>is not</b> kept across daemon stop/starts.  That is, once
+<code>proftpd</code> is shutdown, all current loiter data is lost.
 
 <p>
 <hr>
