@@ -109,6 +109,13 @@ probability of being dropped rises linearly, and <b>all</b> connections are
 dropped when the <em>high</em> threshold (<i>e.g.</i> 100) of unauthenticated
 connections is reached.
 
+<p>
+If the <code>MaxInstances</code> directive is set to a value <em>lower</em>
+that the <em>high</em> threshold, then the configured <code>LoiterRules</code>
+values will be automatically adjusted accordingly, <i>i.e.</i> keeping the
+ratio of <em>low</em> to <em>high</em> thresholds, and the <em>rate</em> the
+same.
+
 <hr>
 <h3><a name="LoiterTable">LoiterTable</a></h3>
 <strong>Syntax:</strong> LoiterTable <em>path</em><br>

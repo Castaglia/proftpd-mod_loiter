@@ -1,6 +1,6 @@
 /*
  * ProFTPD - mod_loiter
- * Copyright (c) 2014-2015 TJ Saunders
+ * Copyright (c) 2014-2016 TJ Saunders
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include "mod_loiter.h"
 #include "shm.h"
 
+extern int ServerMaxInstances;
 extern pid_t mpid;
 
 module loiter_module;
@@ -419,6 +420,7 @@ static int loiter_init(void) {
 static int loiter_sess_init(void) {
   config_rec *c;
   unsigned int rules_low, rules_high, rules_rate;
+  int adjusted_rules = FALSE;
 
   c = find_config(main_server->conf, CONF_PARAM, "LoiterEngine", FALSE);
   if (c) {
@@ -455,6 +457,37 @@ static int loiter_sess_init(void) {
     rules_low = LOITER_RULES_DEFAULT_LOW;
     rules_high = LOITER_RULES_DEFAULT_HIGH;
     rules_rate = LOITER_RULES_DEFAULT_RATE;
+  }
+
+  if (ServerMaxInstances > 0 &&
+      rules_high > ServerMaxInstances) {
+    float ratio;
+
+    /* Adjust for MaxInstances.
+     *
+     * if (rules_high > ServerMaxInstances)
+     *   rules_high = ServerMaxInstances
+     *
+     * rules_low = %20 of rules_high
+     */
+
+    ratio = (float) rules_low / (float) rules_high;
+
+    rules_high = ServerMaxInstances;
+    rules_low = (unsigned int) (ratio * rules_high);
+
+    adjusted_rules = TRUE;
+  }
+
+  if (c != NULL &&
+      adjusted_rules == TRUE) {
+    /* If rules were explicitly configured, AND adjusted for MaxInstances,
+     * log the new/adjusted rules.
+     */
+    (void) pr_log_writefile(loiter_logfd, MOD_LOITER_VERSION,
+      "adjusted rules for MaxInstances %d, now using "
+      "'LoiterRules low %u high %u rate %u'", ServerMaxInstances,
+      rules_low, rules_high, rules_rate);
   }
 
   if (loiter_drop_conn(rules_low, rules_high, rules_rate) == TRUE) {
