@@ -484,7 +484,7 @@ static int loiter_sess_init(void) {
     /* If rules were explicitly configured, AND adjusted for MaxInstances,
      * log the new/adjusted rules.
      */
-    (void) pr_log_writefile(loiter_logfd, MOD_LOITER_VERSION,
+    pr_trace_msg(trace_channel, 6,
       "adjusted rules for MaxInstances %d, now using "
       "'LoiterRules low %u high %u rate %u'", ServerMaxInstances,
       rules_low, rules_high, rules_rate);
