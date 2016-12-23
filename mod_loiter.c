@@ -22,13 +22,18 @@
  * source distribution.
  *
  * -----DO NOT EDIT BELOW THIS LINE-----
- * $Archive: mod_loiter.a $
+ * $Archive: mod_loiter.a$
  */
 
 #include "mod_loiter.h"
 #include "shm.h"
 
+#if PROFTPD_VERSION_NUMBER >= 0x0001030602
+extern unsigned long ServerMaxInstances;
+#else
 extern int ServerMaxInstances;
+#endif /* ProFTPD 1.3.6rc2 and earlier. */
+
 extern pid_t mpid;
 
 module loiter_module;
