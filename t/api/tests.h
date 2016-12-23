@@ -1,6 +1,6 @@
 /*
- * ProFTPD - mod_loiter shm 
- * Copyright (c) 2014-2015 TJ Saunders
+ * ProFTPD - mod_loiter API testsuite
+ * Copyright (c) 2016 TJ Saunders <tj@castaglia.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,19 +22,23 @@
  * source distribution.
  */
 
-#ifndef MOD_LOITER_SHM_H
-#define MOD_LOITER_SHM_H
+/* Testsuite management */
+
+#ifndef MOD_LOITER_TESTS_H
+#define MOD_LOITER_TESTS_H
 
 #include "mod_loiter.h"
 
-int loiter_shm_create(pool *p, const char *path);
-int loiter_shm_destroy(pool *p);
+#ifdef HAVE_CHECK_H
+# include <check.h>
+#else
+# error "Missing Check installation; necessary for ProFTPD testsuite"
+#endif
 
-#define LOITER_FIELD_ID_CONN_COUNT			1
-#define LOITER_FIELD_ID_AUTHD_COUNT			2
+Suite *tests_get_shm_suite(void);
 
-int loiter_shm_get(pool *p, unsigned int *conn_count,
-  unsigned int *authd_count);
-int loiter_shm_incr(pool *p, int field_id, int incr);
+unsigned int recvd_signal_flags;
+extern pid_t mpid;
+extern server_rec *main_server;
 
-#endif /* MOD_LOITER_SHM_H */
+#endif /* MOD_LOITER_TESTS_H */

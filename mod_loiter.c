@@ -22,13 +22,18 @@
  * source distribution.
  *
  * -----DO NOT EDIT BELOW THIS LINE-----
- * $Archive: mod_loiter.a $
+ * $Archive: mod_loiter.a$
  */
 
 #include "mod_loiter.h"
 #include "shm.h"
 
+#if PROFTPD_VERSION_NUMBER >= 0x0001030602
+extern unsigned long ServerMaxInstances;
+#else
 extern int ServerMaxInstances;
+#endif /* ProFTPD 1.3.6rc2 and earlier. */
+
 extern pid_t mpid;
 
 module loiter_module;
@@ -485,9 +490,9 @@ static int loiter_sess_init(void) {
      * log the new/adjusted rules.
      */
     pr_trace_msg(trace_channel, 6,
-      "adjusted rules for MaxInstances %d, now using "
-      "'LoiterRules low %u high %u rate %u'", ServerMaxInstances,
-      rules_low, rules_high, rules_rate);
+      "adjusted rules for MaxInstances %lu, now using "
+      "'LoiterRules low %u high %u rate %u'",
+      (unsigned long) ServerMaxInstances, rules_low, rules_high, rules_rate);
   }
 
   if (loiter_drop_conn(rules_low, rules_high, rules_rate) == TRUE) {

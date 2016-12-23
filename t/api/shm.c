@@ -1,6 +1,6 @@
 /*
- * ProFTPD - mod_loiter shm 
- * Copyright (c) 2014-2015 TJ Saunders
+ * ProFTPD - mod_loiter testsuite
+ * Copyright (c) 2016 TJ Saunders <tj@castaglia.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,19 +22,47 @@
  * source distribution.
  */
 
-#ifndef MOD_LOITER_SHM_H
-#define MOD_LOITER_SHM_H
+/* SHM API tests. */
 
-#include "mod_loiter.h"
+#include "tests.h"
 
-int loiter_shm_create(pool *p, const char *path);
-int loiter_shm_destroy(pool *p);
+#include "shm.h"
 
-#define LOITER_FIELD_ID_CONN_COUNT			1
-#define LOITER_FIELD_ID_AUTHD_COUNT			2
+static pool *p = NULL;
 
-int loiter_shm_get(pool *p, unsigned int *conn_count,
-  unsigned int *authd_count);
-int loiter_shm_incr(pool *p, int field_id, int incr);
+static void set_up(void) {
+  if (p == NULL) {
+    p = make_sub_pool(NULL);
+  }
+}
 
-#endif /* MOD_LOITER_SHM_H */
+static void tear_down(void) {
+  if (p) {
+    destroy_pool(p);
+    p = NULL;
+  } 
+}
+
+START_TEST (shm_get_test) {
+}
+END_TEST
+
+START_TEST (shm_incr_test) {
+}
+END_TEST
+
+Suite *tests_get_shm_suite(void) {
+  Suite *suite;
+  TCase *testcase;
+
+  suite = suite_create("shm");
+  testcase = tcase_create("base");
+
+  tcase_add_checked_fixture(testcase, set_up, tear_down);
+
+  tcase_add_test(testcase, shm_get_test);
+  tcase_add_test(testcase, shm_incr_test);
+
+  suite_add_tcase(suite, testcase);
+  return suite;
+}
