@@ -1,5 +1,5 @@
 dnl ProFTPD - mod_loiter
-dnl Copyright (c) 2014 TJ Saunders <tj@castaglia.org>
+dnl Copyright (c) 2014-2016 TJ Saunders <tj@castaglia.org>
 dnl
 dnl This program is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -73,4 +73,7 @@ AC_SUBST(INCLUDES)
 AC_SUBST(LIBDIRS)
 
 AC_CONFIG_HEADER(mod_loiter.h)
-AC_OUTPUT(Makefile)
+AC_OUTPUT(
+  Makefile
+  t/Makefile
+)
