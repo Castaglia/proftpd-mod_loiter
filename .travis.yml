@@ -33,11 +33,11 @@ script:
   - cp install-sh proftpd/contrib/mod_loiter/
   - cd proftpd
   # First, a build without mod_tls
-  - ./configure --enable-devel=coverage --enable-tests --with-module=mod_loiter
+  - ./configure --enable-devel=coverage --enable-tests --with-modules=mod_loiter
   - make
   # Last, a static build
   - make clean
-  - ./configure --enable-devel=coverage --enable-tests --with-modules=loiter
+  - ./configure --enable-devel=coverage --enable-tests --with-modules=mod_loiter
   - make
   - cd contrib/mod_loiter && make TEST_VERBOSE=1 check && cd ../../
 
