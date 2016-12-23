@@ -33,8 +33,8 @@ script:
   - cp config* proftpd/contrib/mod_loiter/
   - cp install-sh proftpd/contrib/mod_loiter/
   - cd proftpd
-  # First, a build without mod_tls
-  - ./configure --enable-devel=coverage --enable-tests --with-modules=mod_loiter
+  # First, a shared module build
+  - ./configure --enable-devel=coverage --enable-dso --enable-tests --with-shared=mod_loiter
   - make
   # Last, a static build
   - make clean

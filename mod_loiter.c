@@ -490,9 +490,9 @@ static int loiter_sess_init(void) {
      * log the new/adjusted rules.
      */
     pr_trace_msg(trace_channel, 6,
-      "adjusted rules for MaxInstances %d, now using "
-      "'LoiterRules low %u high %u rate %u'", ServerMaxInstances,
-      rules_low, rules_high, rules_rate);
+      "adjusted rules for MaxInstances %lu, now using "
+      "'LoiterRules low %u high %u rate %u'",
+      (unsigned long) ServerMaxInstances, rules_low, rules_high, rules_rate);
   }
 
   if (loiter_drop_conn(rules_low, rules_high, rules_rate) == TRUE) {
