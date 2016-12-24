@@ -46,6 +46,10 @@ clean:
 check:
 	test -z "$(ENABLE_TESTS)" || (cd t/ && $(MAKE) api-tests)
 
+# Run the integration tests
+integration-tests:
+	(cd t/ && $(MAKE) integration-tests)
+
 dist: clean
 	$(RM) Makefile $(MODULE_NAME).h config.status config.cache config.log
 	-$(RM) -r .libs/ .git/ CVS/ RCS/
