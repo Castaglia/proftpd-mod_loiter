@@ -11,11 +11,11 @@ install:
   - sudo apt-get install -y check
   # for static code analysis
   - sudo apt-get install -y cppcheck rats
+  # for integration/regression tests
+  - sudo apt-get install -y libtest-unit-perl libnet-ssh2-perl
   # for test code coverage
   - sudo apt-get install -y lcov
   - gem install coveralls-lcov
-  # For reference
-  - sqlite3 --version
 
 before_script:
   - cd ${TRAVIS_BUILD_DIR}
@@ -40,7 +40,10 @@ script:
   - make clean
   - ./configure --enable-devel=coverage --enable-tests --with-modules=mod_loiter
   - make
-  - cd contrib/mod_loiter && make TEST_VERBOSE=1 check && cd ../../
+  - cd contrib/mod_loiter
+  - make TEST_VERBOSE=1 check
+  - make integration-tests
+  - cd ../../
 
 after_success:
   - cd ${TRAVIS_BUILD_DIR}
