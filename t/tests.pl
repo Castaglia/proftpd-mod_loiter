@@ -56,13 +56,6 @@ if (scalar(@ARGV) > 0) {
   $test_files = [qw(
     t/modules/mod_loiter.t
   )];
-
-  my @feature_tests = testsuite_get_runnable_tests($FEATURE_TESTS);
-  my $feature_ntests = scalar(@feature_tests);
-  if ($feature_ntests > 1 ||
-      ($feature_ntests == 1 && $feature_tests[0] ne 'testsuite_empty_test')) {
-    push(@$test_files, @feature_tests);
-  }
 }
 
 $ENV{PROFTPD_TEST} = 1;
