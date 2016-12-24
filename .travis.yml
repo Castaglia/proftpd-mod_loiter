@@ -42,7 +42,7 @@ script:
   - make
   - cd contrib/mod_loiter
   - make TEST_VERBOSE=1 check
-  - make integration-tests
+  - make PROFTPD_TEST_BIN=${TRAVIS_BUILD_DIR}/proftpd/proftpd integration-tests
   - cd ../../
 
 after_success:
