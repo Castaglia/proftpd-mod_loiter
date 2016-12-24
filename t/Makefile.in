@@ -59,7 +59,7 @@ api-tests$(EXEEXT): $(TEST_API_OBJS) $(TEST_API_DEPS)
 
 # This target is only run on Travis
 integration-tests:
-	perl -I $(TRAVIS_BUILD_DIR)/proftpd/tests/lib tests.pl
+	perl -I $(TRAVIS_BUILD_DIR)/proftpd/tests/t/lib tests.pl
 
 clean:
 	$(LIBTOOL) --mode=clean $(RM) *.o api/*.o api-tests$(EXEEXT) api-tests.log
