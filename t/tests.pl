@@ -54,7 +54,7 @@ if (scalar(@ARGV) > 0) {
 
 } else {
   $test_files = [qw(
-    t/modules/mod_loiter.t
+    modules/mod_loiter.t
   )];
 }
 
