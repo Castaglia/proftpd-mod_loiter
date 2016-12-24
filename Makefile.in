@@ -46,6 +46,10 @@ clean:
 check:
 	test -z "$(ENABLE_TESTS)" || (cd t/ && $(MAKE) api-tests)
 
+# This target is only run on Travis
+integration-tests:
+	perl -I $(TRAVIS_BUILD_DIR)/proftpd/tests/t/lib t/tests.pl
+
 dist: clean
 	$(RM) Makefile $(MODULE_NAME).h config.status config.cache config.log
 	-$(RM) -r .libs/ .git/ CVS/ RCS/
