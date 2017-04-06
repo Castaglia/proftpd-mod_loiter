@@ -1,6 +1,6 @@
 /*
  * ProFTPD - mod_loiter
- * Copyright (c) 2014-2016 TJ Saunders
+ * Copyright (c) 2014-2017 TJ Saunders
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -511,6 +511,8 @@ static int loiter_sess_init(void) {
     (void) pr_log_writefile(loiter_logfd, MOD_LOITER_VERSION,
       "dropping connection");
     pr_log_pri(PR_LOG_NOTICE, MOD_LOITER_VERSION ": dropping connection");
+
+    pr_event_generate("mod_loiter.connection-dropped", NULL);
     pr_session_disconnect(&loiter_module, PR_SESS_DISCONNECT_MODULE_ACL,
       "Too many loitering connections");
   }
