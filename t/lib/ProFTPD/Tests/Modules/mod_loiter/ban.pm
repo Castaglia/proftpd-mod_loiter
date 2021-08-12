@@ -129,12 +129,14 @@ sub loiter_bans {
         }
 
         # Read the banner
-        my $banner = <$client>;
+        my $banner = '';
+        $banner = <$client>;
         if ($ENV{TEST_VERBOSE}) {
           print STDOUT "# Received banner:\n$banner";
         }
 
-        if ($banner !~ /^530/) {
+        if (defined($banner) &&
+            $banner !~ /^530/) {
           push(@$clients, $client);
         }
       }

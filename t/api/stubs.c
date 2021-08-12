@@ -1,6 +1,6 @@
 /*
  * ProFTPD - mod_loiter API testsuite
- * Copyright (c) 2016 TJ Saunders <tj@castaglia.org>
+ * Copyright (c) 2016-2021 TJ Saunders <tj@castaglia.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ int ServerUseReverseDNS = FALSE;
 server_rec *main_server = NULL;
 pid_t mpid = 1;
 unsigned char is_master = TRUE;
-unsigned int recvd_signal_flags = 0;
+volatile unsigned int recvd_signal_flags = 0;
 module *static_modules[] = { NULL };
 module *loaded_modules = NULL;
 xaset_t *server_list = NULL;
@@ -162,16 +162,24 @@ void pr_log_pri(int prio, const char *fmt, ...) {
   }
 }
 
+void pr_log_stacktrace(int fd, const char *name) {
+}
+
 int pr_log_writefile(int fd, const char *name, const char *fmt, ...) {
+  int res;
+  va_list msg;
+
+  va_start(msg, fmt);
+  res = pr_log_vwritefile(fd, name, fmt, msg);
+  va_end(msg);
+
+  return res;
+}
+
+int pr_log_vwritefile(int fd, const char *name, const char *fmt, va_list msg) {
   if (getenv("TEST_VERBOSE") != NULL) {
-    va_list msg;
-
     fprintf(stderr, "%s: ", name);
-
-    va_start(msg, fmt);
     vfprintf(stderr, fmt, msg);
-    va_end(msg);
-
     fprintf(stderr, "\n");
   }
 
@@ -183,6 +191,10 @@ int pr_scoreboard_entry_update(pid_t pid, ...) {
 }
 
 void pr_session_disconnect(module *m, int reason_code, const char *details) {
+}
+
+const char *pr_session_get_protocol(int flags) {
+  return "ftp";
 }
 
 void pr_signals_handle(void) {
