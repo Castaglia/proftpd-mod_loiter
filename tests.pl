@@ -27,6 +27,10 @@ if ($opts->{V}) {
 # We use this, rather than use(), since use() is equivalent to a BEGIN
 # block, and we want the module to be loaded at run-time.
 
+if ($ENV{PROFTPD_TEST_DIR}) {
+  push(@INC, "$ENV{PROFTPD_TEST_DIR}/tests/t/lib");
+}
+
 my $test_dir = (File::Spec->splitpath(abs_path(__FILE__)))[1];
 push(@INC, "$test_dir/t/lib");
 
@@ -40,11 +44,6 @@ unless (defined($ENV{PROFTPD_TEST_BIN})) {
   $ENV{PROFTPD_TEST_BIN} = File::Spec->catfile($test_dir, '..', 'proftpd');
 }
 
-# Set this environment variable, for other test cases which may want to
-# know the directory, and not necessarily just the location of the uninstalled
-# `proftpd' binary.  This is useful, for example, for using the utilities.
-$ENV{PROFTPD_TEST_PATH} = $test_dir;
-
 $| = 1;
 
 my $test_files;
@@ -56,6 +55,24 @@ if (scalar(@ARGV) > 0) {
   $test_files = [qw(
     t/modules/mod_loiter.t
   )];
+
+  # Now interrogate the build to see which module/feature-specific test files
+  # should be added to the list.
+  my $order = 0;
+
+  my $FEATURE_TESTS = {
+    't/modules/mod_loiter/ban.t' => {
+      order => ++$order,
+      test_class => [qw(mod_ban mod_loiter)],
+    },
+  };
+
+  my @feature_tests = testsuite_get_runnable_tests($FEATURE_TESTS);
+  my $feature_ntests = scalar(@feature_tests);
+  if ($feature_ntests > 1 ||
+      ($feature_ntests == 1 && $feature_tests[0] ne 'testsuite_empty_test')) {
+    push(@$test_files, @feature_tests);
+  }
 }
 
 $ENV{PROFTPD_TEST} = 1;
