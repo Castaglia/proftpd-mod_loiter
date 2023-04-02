@@ -63,6 +63,8 @@ sub loiter_ftp {
 
     AuthUserFile => $setup->{auth_user_file},
     AuthGroupFile => $setup->{auth_group_file},
+    AuthOrder => 'mod_auth_file.c',
+
     SocketBindTight => 'on',
     MaxInstances => $max_instances,
     TimeoutIdle => $idle_timeout,
@@ -205,6 +207,8 @@ sub loiter_ftp_maxinstances {
 
     AuthUserFile => $setup->{auth_user_file},
     AuthGroupFile => $setup->{auth_group_file},
+    AuthOrder => 'mod_auth_file.c',
+
     SocketBindTight => 'on',
     MaxInstances => $max_instances,
     TimeoutIdle => $idle_timeout,
