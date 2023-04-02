@@ -134,6 +134,10 @@ sub loiter_bans {
           die("Can't connect to 127.0.0.1:$port: $!");
         }
 
+        # Mitigate timing issues in a CI environment, hopefully, with
+        # artificial delays.
+        sleep(1);
+
         # Read the banner
         my $banner = '';
         $banner = <$client>;
