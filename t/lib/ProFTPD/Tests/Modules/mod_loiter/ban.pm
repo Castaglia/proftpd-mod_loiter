@@ -118,7 +118,7 @@ sub loiter_bans {
 
       my $clients = [];
 
-      # We expect at least 1 client to successfully connect, and at least
+      # We expect at least one client to successfully connect, and at least
       # one client to fail to connect.
       my $count = $max_instances + 1;
       my $expected_max = $count - 1;
@@ -144,9 +144,6 @@ sub loiter_bans {
       }
 
       my $client_count = scalar(@$clients);
-      $self->assert($client_count >= $expected_min &&
-                    $client_count <= $expected_max,
-        test_msg("Expected $expected_min <= $client_count <= $expected_max"));
 
       foreach my $client (@$clients) {
         my $cmd = "QUIT\r\n";
@@ -163,6 +160,10 @@ sub loiter_bans {
 
         $client->close();
       }
+
+      $self->assert($client_count >= $expected_min &&
+                    $client_count <= $expected_max,
+        test_msg("Expected $expected_min <= $client_count <= $expected_max"));
     };
     if ($@) {
       $ex = $@;

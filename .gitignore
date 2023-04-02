@@ -4,6 +4,7 @@ config.cache
 config.status
 autom4te.cache
 Makefile
+mod_loiter.h
 tests/api-tests
 tests/api-tests.log
 *.a
