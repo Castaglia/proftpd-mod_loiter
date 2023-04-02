@@ -116,7 +116,7 @@ sub loiter_bans {
         Timeout => 30,
       };
 
-      my $clients = [];
+      my $clients = {};
 
       # We expect at least one client to successfully connect, and at least
       # one client to fail to connect.
@@ -125,6 +125,10 @@ sub loiter_bans {
       my $expected_min = 1;
 
       for (my $i = 0; $i <= $count; $i++) {
+        if ($ENV{TEST_VERBOSE}) {
+          print STDERR "# Connecting with client #$i\n";
+        }
+
         my $client = IO::Socket::INET->new(%$client_opts);
         unless ($client) {
           die("Can't connect to 127.0.0.1:$port: $!");
@@ -139,13 +143,19 @@ sub loiter_bans {
 
         if (defined($banner) &&
             $banner !~ /^530/) {
-          push(@$clients, $client);
+          $clients->{$i} = $client;
         }
       }
 
-      my $client_count = scalar(@$clients);
+      my $client_count = scalar(keys(%$clients));
 
-      foreach my $client (@$clients) {
+      foreach my $clientno (keys(%$clients)) {
+        if ($ENV{TEST_VERBOSE}) {
+          print STDERR "# Disconnecting client #$clientno\n";
+        }
+
+        my $client = $clients->{$clientno};
+
         my $cmd = "QUIT\r\n";
         if ($ENV{TEST_VERBOSE}) {
           print STDOUT "# Sending command: $cmd";
