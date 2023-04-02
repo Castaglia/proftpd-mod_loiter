@@ -143,7 +143,6 @@ jobs:
         env:
           PROFTPD_TEST_BIN: /usr/local/sbin/proftpd
           PROFTPD_TEST_DIR: ${{ github.workspace }}/proftpd
-          TEST_VERBOSE: 1
         run: |
           cd proftpd/contrib/mod_loiter
           perl tests.pl
