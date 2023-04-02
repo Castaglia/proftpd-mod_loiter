@@ -150,7 +150,7 @@ static int loiter_drop_conn(unsigned int low, unsigned int high,
   p *= unauthd_count - low;
   p /= high - low;
   p += rate;
-#ifdef HAVE_RANDOM
+#if defined(HAVE_RANDOM)
   r = (unsigned int) ((1 + random()) / (RAND_MAX / 100) + 1);
 #else
   r = (unsigned int) ((1 + rand()) / (RAND_MAX / 100) + 1);
@@ -348,11 +348,11 @@ static void loiter_mod_unload_ev(const void *event_data, void *user_data) {
 #endif
 
 static void loiter_restart_ev(const void *event_data, void *user_data) {
-  /* Seed the random(3) generator. */ 
-#ifdef HAVE_RANDOM
-  srandom((unsigned int) (time(NULL) * getpid())); 
+  /* Seed the random(3) generator. */
+#if defined(HAVE_RANDOM)
+  srandom((unsigned int) (time(NULL) * getpid()));
 #else
-  srand((unsigned int) (time(NULL) * getpid())); 
+  srand((unsigned int) (time(NULL) * getpid()));
 #endif /* HAVE_RANDOM */
 }
 
@@ -412,11 +412,11 @@ static int loiter_init(void) {
   pr_event_register(&loiter_module, "core.startup", loiter_startup_ev, NULL);
   pr_event_register(&loiter_module, "core.shutdown", loiter_shutdown_ev, NULL);
 
-  /* Seed the random(3) generator. */ 
-#ifdef HAVE_RANDOM
-  srandom((unsigned int) (time(NULL) * getpid())); 
+  /* Seed the random(3) generator. */
+#if defined(HAVE_RANDOM)
+  srandom((unsigned int) (time(NULL) * getpid()));
 #else
-  srand((unsigned int) (time(NULL) * getpid())); 
+  srand((unsigned int) (time(NULL) * getpid()));
 #endif /* HAVE_RANDOM */
 
   return 0;
@@ -445,18 +445,18 @@ static int loiter_sess_init(void) {
 
   pr_event_register(&loiter_module, "core.exit", loiter_exit_ev, NULL);
 
-  /* Reseed the random(3) generator. */ 
-#ifdef HAVE_RANDOM
-  srandom((unsigned int) (time(NULL) ^ getpid())); 
+  /* Reseed the random(3) generator. */
+#if defined(HAVE_RANDOM)
+  srandom((unsigned int) (time(NULL) ^ getpid()));
 #else
-  srand((unsigned int) (time(NULL) ^ getpid())); 
+  srand((unsigned int) (time(NULL) ^ getpid()));
 #endif /* HAVE_RANDOM */
 
   c = find_config(main_server->conf, CONF_PARAM, "LoiterRules", FALSE);
   if (c != NULL) {
     rules_low = *((unsigned int *) c->argv[0]);
     rules_high = *((unsigned int *) c->argv[1]);
-    rules_rate = *((unsigned int *) c->argv[2]); 
+    rules_rate = *((unsigned int *) c->argv[2]);
 
   } else {
     rules_low = LOITER_RULES_DEFAULT_LOW;

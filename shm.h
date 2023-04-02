@@ -1,5 +1,5 @@
 /*
- * ProFTPD - mod_loiter shm 
+ * ProFTPD - mod_loiter shm
  * Copyright (c) 2014-2015 TJ Saunders
  *
  * This program is free software; you can redistribute it and/or modify
