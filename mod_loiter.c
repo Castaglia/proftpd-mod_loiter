@@ -1,6 +1,6 @@
 /*
  * ProFTPD - mod_loiter
- * Copyright (c) 2014-2017 TJ Saunders
+ * Copyright (c) 2014-2023 TJ Saunders
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -236,7 +236,7 @@ MODRET set_loiterrules(cmd_rec *cmd) {
 
   CHECK_CONF(cmd, CONF_ROOT|CONF_VIRTUAL|CONF_GLOBAL);
 
-  for (i = 1; i < cmd->argc; i++) {
+  for (i = 1; i < cmd->argc; i += 2) {
     if (strcasecmp(cmd->argv[i], "low") == 0) {
       char *ptr = NULL;
       long v;
@@ -252,7 +252,6 @@ MODRET set_loiterrules(cmd_rec *cmd) {
       }
 
       low = (unsigned int) v;
-      i++;
 
     } else if (strcasecmp(cmd->argv[i], "high") == 0) {
       char *ptr = NULL;
@@ -269,7 +268,6 @@ MODRET set_loiterrules(cmd_rec *cmd) {
       }
 
       high = (unsigned int) v;
-      i++;
 
     } else if (strcasecmp(cmd->argv[i], "rate") == 0) {
       char *ptr = NULL;
@@ -287,7 +285,6 @@ MODRET set_loiterrules(cmd_rec *cmd) {
       }
 
       rate = (unsigned int) v;
-      i++;
 
     } else {
       CONF_ERROR(cmd, pstrcat(cmd->tmp_pool, "unknown keyword: ", cmd->argv[i],
